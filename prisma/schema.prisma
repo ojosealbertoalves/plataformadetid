@@ -1,0 +1,203 @@
+// Sistema de TID (Transferência Interna de Despesa) — Vila Brasil Engenharia
+//
+// NOTA DE PORTABILIDADE (SQLite -> PostgreSQL):
+// - Valores monetários são armazenados como Int (centavos), nunca Float/Decimal,
+//   porque o tipo Decimal do Prisma não é suportado pelo conector sqlite.
+//   Isso evita erros de precisão de ponto flutuante e funciona identicamente
+//   em SQLite e PostgreSQL sem alterar o schema.
+// - Campos "enum" (role, kind, type, status, action) são modelados como String,
+//   porque o conector sqlite não suporta o tipo nativo `enum` do Prisma.
+//   A validação dos valores permitidos é feita na camada de aplicação (Zod).
+//   Isso também evita reescrever o schema ao migrar para PostgreSQL.
+// - Para migrar para PostgreSQL: troque `provider = "sqlite"` por `"postgresql"`
+//   no datasource abaixo, aponte DATABASE_URL para o Postgres, e rode
+//   `npx prisma migrate deploy`. Nenhuma outra alteração de schema é necessária.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Usuários e Unidades
+// ---------------------------------------------------------------------------
+
+/// role: "ADMIN" | "GERENTE_OBRA" | "UNIDADE"
+model User {
+  id           String    @id @default(cuid())
+  login        String    @unique
+  passwordHash String
+  name         String
+  role         String
+  unitId       String?   @unique
+  ativo        Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  unit         Unit?        @relation(fields: [unitId], references: [id])
+  tidsCreated  Tid[]        @relation("TidCreatedBy")
+  comments     TidComment[]
+  auditLogs    AuditLog[]
+
+  @@index([role])
+}
+
+/// kind: "DEPARTMENT" | "WORK"
+model Unit {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  kind          String
+  ativo         Boolean  @default(true)
+  lastTidNumber Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user         User?
+  tidsOrigin   Tid[]     @relation("TidOrigin")
+  tidsDest     Tid[]     @relation("TidDest")
+  tidItemsObra TidItem[] @relation("ObraUau")
+
+  @@index([kind])
+}
+
+// ---------------------------------------------------------------------------
+// TID
+// ---------------------------------------------------------------------------
+
+/// type: "A" | "B" | "C" | "D" | "E" | "F"
+/// status: "PENDENTE" | "APROVADA" | "RECUSADA"
+model Tid {
+  id             String    @id @default(cuid())
+  number         Int
+  label          String
+  type           String
+  originUnitId   String
+  destUnitId     String
+  referenceMonth DateTime
+  status         String    @default("PENDENTE")
+  createdById    String
+  approvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+  isDeleted      Boolean   @default(false)
+
+  originUnit  Unit         @relation("TidOrigin", fields: [originUnitId], references: [id])
+  destUnit    Unit         @relation("TidDest", fields: [destUnitId], references: [id])
+  createdBy   User         @relation("TidCreatedBy", fields: [createdById], references: [id])
+  items       TidItem[]
+  comments    TidComment[]
+  attachments Attachment[]
+
+  @@unique([originUnitId, number])
+  @@index([originUnitId])
+  @@index([destUnitId])
+  @@index([status])
+  @@index([referenceMonth])
+  @@index([type])
+  @@index([isDeleted])
+}
+
+model TidItem {
+  id    String @id @default(cuid())
+  tidId String
+  tid   Tid    @relation(fields: [tidId], references: [id], onDelete: Cascade)
+
+  observacao String?
+
+  // --- Tipos A / B (Encargos Diretos/Indiretos da Folha) ---
+  funcionario     String?
+  mesReferencia   DateTime?
+  funcao          String?
+  centroCusto     String?
+  localOrigem     String?
+  localTrabalho   String?
+  qtdeDias        Int?
+  valorFolhaCents Int?
+  encargos80Cents Int?
+  totalGeralCents Int?
+
+  // --- Tipos C / D (Despesas Indiretas / Serviços de Terceiros) ---
+  item            String?
+  localUtilizacao String?
+  obraUauId       String?
+  procUau         String?
+  fornecedor      String?
+  docFiscal       String?
+  valorNfCents    Int?
+
+  // --- Tipos E / F (Equipamentos / Materiais) ---
+  quantidade             Float?
+  valorUnitOriginalCents Int?
+  valorDepreciacaoCents  Int?
+
+  // Comum a todos os tipos: valor final da TID para o item
+  // (informado pelo usuário em A/B/C/D; calculado no servidor em E/F)
+  valorTidCents Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  obraUau     Unit?        @relation("ObraUau", fields: [obraUauId], references: [id])
+  attachments Attachment[]
+
+  @@index([tidId])
+  @@index([obraUauId])
+}
+
+model TidComment {
+  id        String   @id @default(cuid())
+  tidId     String
+  authorId  String
+  text      String
+  createdAt DateTime @default(now())
+
+  tid    Tid  @relation(fields: [tidId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([tidId])
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  tidId      String?
+  tidItemId  String?
+  fileName   String
+  path       String
+  mime       String
+  size       Int
+  uploadedAt DateTime @default(now())
+
+  tid     Tid?     @relation(fields: [tidId], references: [id], onDelete: Cascade)
+  tidItem TidItem? @relation(fields: [tidItemId], references: [id], onDelete: Cascade)
+
+  @@index([tidId])
+  @@index([tidItemId])
+}
+
+// ---------------------------------------------------------------------------
+// Auditoria
+// ---------------------------------------------------------------------------
+
+/// action: "CREATE" | "UPDATE" | "DELETE" | "APPROVE" | "REJECT"
+model AuditLog {
+  id        String   @id @default(cuid())
+  entity    String
+  entityId  String
+  action    String
+  actorId   String
+  before    String?
+  after     String?
+  createdAt DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+}
