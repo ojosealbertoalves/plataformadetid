@@ -1,24 +1,20 @@
 // Sistema de TID (Transferência Interna de Despesa) — Vila Brasil Engenharia
 //
-// NOTA DE PORTABILIDADE (SQLite -> PostgreSQL):
+// Banco: PostgreSQL (dev e produção — ver docker-compose.yml e README).
 // - Valores monetários são armazenados como Int (centavos), nunca Float/Decimal,
-//   porque o tipo Decimal do Prisma não é suportado pelo conector sqlite.
-//   Isso evita erros de precisão de ponto flutuante e funciona identicamente
-//   em SQLite e PostgreSQL sem alterar o schema.
+//   para evitar erros de precisão de ponto flutuante.
 // - Campos "enum" (role, kind, type, status, action) são modelados como String,
-//   porque o conector sqlite não suporta o tipo nativo `enum` do Prisma.
-//   A validação dos valores permitidos é feita na camada de aplicação (Zod).
-//   Isso também evita reescrever o schema ao migrar para PostgreSQL.
-// - Para migrar para PostgreSQL: troque `provider = "sqlite"` por `"postgresql"`
-//   no datasource abaixo, aponte DATABASE_URL para o Postgres, e rode
-//   `npx prisma migrate deploy`. Nenhuma outra alteração de schema é necessária.
+//   com a validação dos valores permitidos feita na camada de aplicação (Zod),
+//   em vez de enum nativo do Postgres — mantém o schema simples de alterar
+//   (novos valores não exigem migration) e idêntico ao formato já usado em
+//   todo o restante da aplicação.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

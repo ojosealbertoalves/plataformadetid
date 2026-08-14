@@ -1,24 +1,24 @@
 # Plataforma TID — Vila Brasil Engenharia
 
 Sistema interno para solicitação e controle de **TID (Transferência Interna de Despesa)**.
-MVP full-stack em Next.js (App Router), pronto para operação real e rodando 100% local,
-com a arquitetura já preparada para deploy futuro (troca de SQLite para PostgreSQL sem
-reescrever código).
+MVP full-stack em Next.js (App Router), pronto para operação real, rodando em
+PostgreSQL tanto em desenvolvimento quanto em produção (deploy no Railway).
 
 ## Stack
 
 - Next.js (App Router) + TypeScript — UI e API routes no mesmo projeto
-- Prisma ORM — SQLite em dev, PostgreSQL no deploy (mesmo schema)
+- Prisma ORM — PostgreSQL em dev e produção (mesmo schema, mesmo provider)
 - Auth.js (NextAuth v5) — login/senha com Credentials Provider, senha em bcrypt
 - Tailwind CSS + shadcn/ui
 - SheetJS (`xlsx`) — exportação Excel/CSV/TXT no servidor
 - Assistente IA via OpenRouter, com ferramentas parametrizadas (sem SQL livre para o modelo)
-- Docker Compose com PostgreSQL, para o dia do deploy
+- Docker Compose com PostgreSQL, para desenvolvimento local
 
 ## Pré-requisitos
 
 - Node.js 20+
 - npm
+- Docker (para o Postgres local via `docker-compose.yml`) — ou acesso a um Postgres já existente
 
 ## Setup (primeira vez)
 
@@ -28,19 +28,26 @@ npm install
 
 # 2. Copiar variáveis de ambiente
 cp .env.example .env
-# Edite .env se quiser (o padrão já funciona 100% local com SQLite)
+# O padrão em .env.example já aponta para o Postgres do docker-compose (passo 3)
 
-# 3. Rodar as migrations (cria o arquivo prisma/dev.db)
+# 3. Subir o PostgreSQL local
+docker compose up -d
+
+# 4. Rodar as migrations (cria as tabelas no Postgres local)
 npx prisma migrate dev
 
-# 4. Popular o banco com as unidades, obras e usuários padrão
+# 5. Popular o banco com as unidades, obras e usuários padrão
 npm run db:seed
 
-# 5. Subir em desenvolvimento
+# 6. Subir em desenvolvimento
 npm run dev
 ```
 
 Acesse http://localhost:3000
+
+Se preferir não usar Docker, aponte `DATABASE_URL` em `.env` para qualquer outro
+Postgres de desenvolvimento (local ou um serviço gerenciado) e siga a partir do
+passo 4.
 
 ## Contas de acesso (seed)
 
@@ -96,6 +103,11 @@ Os anexos são salvos localmente em `/uploads` através da interface `StoragePro
 interface com um `S3StorageProvider` e trocar a instância exportada — nenhuma outra
 parte do código precisa mudar.
 
+> **Atenção (Railway):** o filesystem do Railway é efêmero — qualquer arquivo salvo em
+> `/uploads` é perdido a cada novo deploy/restart do container. Enquanto o storage em
+> nuvem (S3) não for implementado, não confie em anexos enviados em produção para
+> persistirem a longo prazo.
+
 ## Assistente IA (OpenRouter)
 
 A aba **Assistente IA** (exclusiva do admin) fica desabilitada até que você configure:
@@ -110,42 +122,42 @@ entre um conjunto fixo de ferramentas parametrizadas (`src/lib/ai-tools.ts`), qu
 e com quais parâmetros. O servidor executa a consulta via Prisma e devolve números; o
 modelo só redige a resposta em cima desses números.
 
-## Migrando de SQLite para PostgreSQL (deploy)
+## Deploy no Railway
 
-O schema já foi desenhado para ser idêntico nos dois bancos (sem `Decimal` nem `enum`
-nativos, que o SQLite não suporta — veja o comentário no topo de `prisma/schema.prisma`).
-Para migrar:
+1. **Criar o projeto**: no [Railway](https://railway.app), "New Project" → "Deploy from
+   GitHub repo" → selecione este repositório.
+2. **Adicionar o PostgreSQL**: no mesmo projeto Railway, "New" → "Database" → "Add
+   PostgreSQL". Isso cria um serviço de banco com uma `DATABASE_URL` própria.
+3. **Configurar as variáveis** no serviço da aplicação (aba "Variables"):
+   - `DATABASE_URL` → referencie a URL do serviço Postgres criado no passo 2 (no
+     Railway, use a referência de variável, ex.: `${{Postgres.DATABASE_URL}}`, para que
+     fique sempre em sincronia — não copie o valor manualmente).
+   - `NEXTAUTH_SECRET` → gere com `openssl rand -base64 32` e cole o valor.
+   - `NEXTAUTH_URL` → a URL pública do serviço, ex.: `https://<app>.up.railway.app`
+     (o Railway atribui esse domínio após o primeiro deploy; edite a variável depois de
+     descobrir a URL, ou configure um domínio customizado antes).
+   - `OPENROUTER_API_KEY` → deixe vazio por enquanto (assistente IA fica desabilitado).
+4. **Deploy**: o Railway detecta o projeto Next.js via Nixpacks automaticamente
+   (`railway.json` incluso fixa o comando de start). No build, `npm install` roda
+   `prisma generate` (via `postinstall`) e `npm run build` gera o build de produção. No
+   start, `npm run start` roda `prisma migrate deploy` (cria/atualiza as tabelas no
+   Postgres do Railway) seguido de `prisma db seed` (popula unidades, obras e usuários —
+   é idempotente, usa `upsert`, então não duplica em deploys seguintes) e só então inicia
+   `next start` na porta que o Railway injeta (`$PORT`).
+5. **Confirmar**: acompanhe os logs do deploy — devem aparecer as migrations sendo
+   aplicadas e o log do seed ("Seedando..."). Acesse a URL pública e faça login com um
+   dos usuários de teste abaixo.
 
-1. Suba um PostgreSQL (o `docker-compose.yml` incluso já sobe um local para testes):
-   ```bash
-   docker compose up -d
-   ```
-2. No `prisma/schema.prisma`, troque:
-   ```prisma
-   datasource db {
-     provider = "sqlite"
-     url      = env("DATABASE_URL")
-   }
-   ```
-   por:
-   ```prisma
-   datasource db {
-     provider = "postgresql"
-     url      = env("DATABASE_URL")
-   }
-   ```
-3. Atualize `DATABASE_URL` no `.env` para a string de conexão do Postgres, por exemplo:
-   ```
-   DATABASE_URL="postgresql://tid:tid@localhost:5432/plataforma_tid?schema=public"
-   ```
-4. Rode as migrations no novo banco e o seed:
-   ```bash
-   npx prisma migrate deploy
-   npm run db:seed
-   ```
+### Rodar o seed manualmente (se precisar)
 
-Nenhuma outra alteração de código é necessária — toda a camada de aplicação (queries,
-cálculos, valores em centavos) já é agnóstica ao provider do banco.
+Com `DATABASE_URL` apontando para o banco desejado:
+
+```bash
+npx prisma db seed
+```
+
+É seguro rodar quantas vezes quiser — todos os registros usam `upsert` por chave única
+(`login`/`code`), então não duplica nem sobrescreve dados que já existem.
 
 ## Regras de negócio principais
 
