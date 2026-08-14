@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -43,6 +44,7 @@ export function TidActions({
       return;
     }
     toast.success("TID aprovada.");
+    router.push("/inbox");
     router.refresh();
   }
 
@@ -65,6 +67,7 @@ export function TidActions({
     }
     toast.success("TID recusada.");
     setRejectOpen(false);
+    router.push("/inbox");
     router.refresh();
   }
 
@@ -111,12 +114,19 @@ export function TidActions({
                   Informe o motivo da recusa. Este comentário ficará registrado no histórico da TID.
                 </DialogDescription>
               </DialogHeader>
-              <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Motivo da recusa..."
-                rows={4}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="reject-reason-detail">
+                  Motivo da recusa <span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  id="reject-reason-detail"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Descreva o motivo da recusa..."
+                  rows={4}
+                  required
+                />
+              </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setRejectOpen(false)}>
                   Cancelar

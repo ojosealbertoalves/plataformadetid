@@ -15,20 +15,24 @@ interface PageProps {
 
 type TidWithRelations = Prisma.TidGetPayload<{ include: typeof tidListInclude }>;
 
+function sumValor(tids: TidWithRelations[]) {
+  return tids.reduce((acc, t) => acc + t.items.reduce((a, i) => a + i.valorTidCents, 0), 0);
+}
+
 function statsFor(tids: TidWithRelations[], side: "origin" | "dest", unitIds: (string | null)[]) {
   const filtered = tids.filter((t) =>
     side === "origin" ? unitIds.includes(t.originUnitId) : unitIds.includes(t.destUnitId)
   );
-  const total = filtered.reduce(
-    (acc, t) => acc + t.items.reduce((a, i) => a + i.valorTidCents, 0),
-    0
-  );
+  const pendente = filtered.filter((t) => t.status === "PENDENTE");
+  const aprovada = filtered.filter((t) => t.status === "APROVADA");
+  const recusada = filtered.filter((t) => t.status === "RECUSADA");
+
   return {
     count: filtered.length,
-    pendente: filtered.filter((t) => t.status === "PENDENTE").length,
-    aprovada: filtered.filter((t) => t.status === "APROVADA").length,
-    recusada: filtered.filter((t) => t.status === "RECUSADA").length,
-    total,
+    total: sumValor(filtered),
+    pendente: { count: pendente.length, total: sumValor(pendente) },
+    aprovada: { count: aprovada.length, total: sumValor(aprovada) },
+    recusada: { count: recusada.length, total: sumValor(recusada) },
   };
 }
 
@@ -82,10 +86,29 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           Enviadas
         </h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <StatCard label="Total Enviadas" count={sent.count} valueLabel={formatBRL(sent.total)} />
-          <StatCard label="Pendentes" count={sent.pendente} valueLabel="aguardando decisão" tone="warning" />
-          <StatCard label="Aprovadas" count={sent.aprovada} valueLabel="confirmadas" tone="positive" />
-          <StatCard label="Recusadas" count={sent.recusada} valueLabel="com motivo registrado" tone="negative" />
+          <StatCard
+            label="Total Enviado"
+            value={formatBRL(sent.total)}
+            caption={`${sent.count} TID(s)`}
+          />
+          <StatCard
+            label="Pendente"
+            value={formatBRL(sent.pendente.total)}
+            caption={`${sent.pendente.count} aguardando decisão`}
+            tone="warning"
+          />
+          <StatCard
+            label="Aprovado"
+            value={formatBRL(sent.aprovada.total)}
+            caption={`${sent.aprovada.count} confirmada(s)`}
+            tone="positive"
+          />
+          <StatCard
+            label="Recusado"
+            value={formatBRL(sent.recusada.total)}
+            caption={`${sent.recusada.count} com motivo registrado`}
+            tone="negative"
+          />
         </div>
       </section>
 
@@ -94,10 +117,29 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           Recebidas
         </h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <StatCard label="Total Recebidas" count={received.count} valueLabel={formatBRL(received.total)} />
-          <StatCard label="Pendentes" count={received.pendente} valueLabel="aguardando sua decisão" tone="warning" />
-          <StatCard label="Aprovadas" count={received.aprovada} valueLabel="confirmadas" tone="positive" />
-          <StatCard label="Recusadas" count={received.recusada} valueLabel="recusadas por você" tone="negative" />
+          <StatCard
+            label="Total Recebido"
+            value={formatBRL(received.total)}
+            caption={`${received.count} TID(s)`}
+          />
+          <StatCard
+            label="Pendente"
+            value={formatBRL(received.pendente.total)}
+            caption={`${received.pendente.count} aguardando sua decisão`}
+            tone="warning"
+          />
+          <StatCard
+            label="Aprovado"
+            value={formatBRL(received.aprovada.total)}
+            caption={`${received.aprovada.count} confirmada(s)`}
+            tone="positive"
+          />
+          <StatCard
+            label="Recusado"
+            value={formatBRL(received.recusada.total)}
+            caption={`${received.recusada.count} recusada(s) por você`}
+            tone="negative"
+          />
         </div>
       </section>
 

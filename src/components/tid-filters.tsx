@@ -36,6 +36,15 @@ export function TidFilters({
 
   const month = searchParams.get("month") ?? "";
 
+  const typeItems = {
+    [ALL]: "Todos os tipos",
+    ...Object.fromEntries(TID_TYPES.map((t) => [t, `${t} — ${TID_TYPE_LABELS[t]}`])),
+  };
+  const statusItems = {
+    [ALL]: "Todos os status",
+    ...Object.fromEntries(TID_STATUSES.map((s) => [s, TID_STATUS_LABELS[s]])),
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <input
@@ -45,7 +54,11 @@ export function TidFilters({
         className="border-input h-9 rounded-md border bg-transparent px-3 text-sm shadow-xs"
       />
       {showType && (
-        <Select value={searchParams.get("type") ?? ALL} onValueChange={(v) => setParam("type", v)}>
+        <Select
+          value={searchParams.get("type") ?? ALL}
+          onValueChange={(v) => setParam("type", v)}
+          items={typeItems}
+        >
           <SelectTrigger className="w-[220px]">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
@@ -63,6 +76,7 @@ export function TidFilters({
         <Select
           value={searchParams.get("status") ?? ALL}
           onValueChange={(v) => setParam("status", v)}
+          items={statusItems}
         >
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Status" />

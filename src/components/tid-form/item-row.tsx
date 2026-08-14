@@ -46,18 +46,24 @@ export function ItemRow({
 }) {
   const fields = FIELDS_BY_GROUP[group];
   const preview = computePreview(group, item);
+  const obraUauItems = Object.fromEntries(works.map((w) => [w.id, `${w.code} — ${w.name}`]));
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between py-3">
-        <span className="text-sm font-semibold">Item {index + 1}</span>
+    <Card className="border-t-brand/60 border-t-2">
+      <CardHeader className="bg-muted/30 flex flex-row items-center justify-between border-b py-3">
+        <span className="flex items-center gap-2 text-sm font-semibold">
+          <span className="bg-brand flex size-5 items-center justify-center rounded-full text-[11px] font-semibold text-white">
+            {index + 1}
+          </span>
+          Item {index + 1}
+        </span>
         {canRemove && (
           <Button variant="ghost" size="icon" className="size-7" onClick={onRemove} type="button">
             <X className="size-4" />
           </Button>
         )}
       </CardHeader>
-      <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <CardContent className="grid grid-cols-1 gap-4 pt-4 sm:grid-cols-2 lg:grid-cols-3">
         {fields.map((field) => {
           const spanClass =
             field.colSpan === 3
@@ -70,8 +76,13 @@ export function ItemRow({
             const previewValue = (preview as Record<string, number>)[field.key];
             return (
               <div key={field.key} className={cn("space-y-2", spanClass)}>
-                <Label className="text-muted-foreground">{field.label} (calculado)</Label>
-                <div className="border-input bg-muted/50 h-9 rounded-md border px-3 py-1.5 text-sm tabular-nums">
+                <Label className="text-muted-foreground flex items-center gap-1.5">
+                  {field.label}
+                  <span className="border-brand-support-2/40 text-brand-support-1 rounded-full border px-1.5 py-0 text-[10px] font-normal tracking-wide uppercase">
+                    Automático
+                  </span>
+                </Label>
+                <div className="border-brand-support-2/30 bg-brand/10 text-foreground h-9 rounded-md border px-3 py-1.5 text-sm font-medium tabular-nums">
                   {previewValue !== undefined ? formatBRLFromValue(previewValue) : "—"}
                 </div>
               </div>
@@ -88,6 +99,7 @@ export function ItemRow({
                 <Select
                   value={item[field.key] ?? ""}
                   onValueChange={(v) => onChange(field.key, v ?? "")}
+                  items={obraUauItems}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecione a obra" />

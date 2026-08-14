@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { tidListInclude } from "@/lib/tid-queries";
@@ -13,7 +12,8 @@ import {
 import { formatBRL } from "@/lib/money";
 import { formatYearMonth } from "@/lib/month";
 import { TID_TYPE_LABELS, type TidType } from "@/lib/constants";
-import { InboxRowActions } from "@/components/inbox-row-actions";
+import { LinkRow } from "@/components/link-row";
+import { ChevronRight } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 
 export default async function InboxPage() {
@@ -38,7 +38,8 @@ export default async function InboxPage() {
       <div>
         <h1 className="text-2xl font-semibold">Caixa de Entrada</h1>
         <p className="text-muted-foreground text-sm">
-          TIDs pendentes aguardando sua aprovação ou recusa.
+          TIDs pendentes aguardando sua aprovação ou recusa. Clique em uma TID para ver todos os
+          detalhes antes de decidir.
         </p>
       </div>
 
@@ -56,27 +57,23 @@ export default async function InboxPage() {
                 <TableHead>Origem</TableHead>
                 <TableHead>Mês Ref.</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className="w-8" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {tids.map((tid) => {
                 const total = tid.items.reduce((acc, i) => acc + i.valorTidCents, 0);
                 return (
-                  <TableRow key={tid.id}>
-                    <TableCell className="font-medium">
-                      <Link href={`/tids/${tid.id}`} className="hover:underline">
-                        {tid.label}
-                      </Link>
-                    </TableCell>
+                  <LinkRow key={tid.id} href={`/tids/${tid.id}`}>
+                    <TableCell className="font-medium">{tid.label}</TableCell>
                     <TableCell>{TID_TYPE_LABELS[tid.type as TidType] ?? tid.type}</TableCell>
                     <TableCell>{tid.originUnit.code}</TableCell>
                     <TableCell>{formatYearMonth(tid.referenceMonth)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatBRL(total)}</TableCell>
                     <TableCell>
-                      <InboxRowActions tidId={tid.id} />
+                      <ChevronRight className="text-muted-foreground size-4" />
                     </TableCell>
-                  </TableRow>
+                  </LinkRow>
                 );
               })}
             </TableBody>

@@ -5,8 +5,8 @@ import { tidDetailInclude } from "@/lib/tid-queries";
 import { canDecideTid, canManageTid, canViewTid, isMonthLocked } from "@/lib/permissions";
 import { formatBRL } from "@/lib/money";
 import { formatYearMonth, formatYearMonthLabel } from "@/lib/month";
-import { TID_STATUS_LABELS, TID_TYPE_LABELS, type TidStatus, type TidType } from "@/lib/constants";
-import { Badge } from "@/components/ui/badge";
+import { TID_TYPE_LABELS, type TidType } from "@/lib/constants";
+import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ItemsTable } from "@/components/tid-detail/items-table";
@@ -14,12 +14,6 @@ import { TidActions } from "@/components/tid-detail/tid-actions";
 import { CommentBox } from "@/components/tid-detail/comment-box";
 import { AttachmentsPanel } from "@/components/tid-detail/attachments-panel";
 import { Lock } from "lucide-react";
-
-function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
-  if (status === "APROVADA") return "default";
-  if (status === "RECUSADA") return "destructive";
-  return "secondary";
-}
 
 export default async function TidDetailPage({
   params,
@@ -53,9 +47,7 @@ export default async function TidDetailPage({
             {tid.label} · {TID_TYPE_LABELS[tid.type as TidType]}
           </p>
         </div>
-        <Badge variant={statusVariant(tid.status)} className="text-sm">
-          {TID_STATUS_LABELS[tid.status as TidStatus]}
-        </Badge>
+        <StatusBadge status={tid.status} className="h-6 px-3 text-sm" />
       </div>
 
       {locked && (

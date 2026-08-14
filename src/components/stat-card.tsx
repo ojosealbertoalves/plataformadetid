@@ -3,32 +3,42 @@ import { cn } from "@/lib/utils";
 
 export function StatCard({
   label,
-  count,
-  valueLabel,
+  value,
+  caption,
   tone,
 }: {
   label: string;
-  count: number;
-  valueLabel: string;
+  value: string | number;
+  caption?: string;
   tone?: "default" | "positive" | "negative" | "warning";
 }) {
   return (
-    <Card>
+    <Card
+      className={cn(
+        "border-l-2",
+        tone === "positive" && "border-l-emerald-500",
+        tone === "negative" && "border-l-red-500",
+        tone === "warning" && "border-l-amber-500",
+        (!tone || tone === "default") && "border-l-brand-support-2"
+      )}
+    >
       <CardHeader className="pb-2">
-        <CardTitle className="text-muted-foreground text-sm font-medium">{label}</CardTitle>
+        <CardTitle className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          {label}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div
           className={cn(
-            "text-2xl font-bold",
-            tone === "positive" && "text-emerald-600 dark:text-emerald-400",
-            tone === "negative" && "text-red-600 dark:text-red-400",
-            tone === "warning" && "text-amber-600 dark:text-amber-400"
+            "text-2xl font-semibold tabular-nums",
+            tone === "positive" && "text-emerald-400",
+            tone === "negative" && "text-red-400",
+            tone === "warning" && "text-amber-400"
           )}
         >
-          {count}
+          {value}
         </div>
-        <p className="text-muted-foreground mt-1 text-xs">{valueLabel}</p>
+        {caption && <p className="text-muted-foreground mt-1 text-xs">{caption}</p>}
       </CardContent>
     </Card>
   );

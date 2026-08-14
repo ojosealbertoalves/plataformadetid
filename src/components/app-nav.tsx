@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/constants";
 
 interface NavUser {
@@ -14,54 +13,43 @@ interface NavUser {
   unitName: string | null;
 }
 
-const UNIT_LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/tids/new", label: "Nova TID" },
-  { href: "/inbox", label: "Caixa de Entrada" },
-];
-
-const ADMIN_LINKS = [
-  { href: "/admin/summary", label: "Resumo" },
-  { href: "/admin/audit", label: "Auditoria" },
-  { href: "/admin/assistant", label: "Assistente IA" },
-];
-
 export function AppNav({ user }: { user: NavUser }) {
-  const pathname = usePathname();
-  const links = user.role === "ADMIN" ? ADMIN_LINKS : UNIT_LINKS;
-
   const roleLabel =
-    user.role === "ADMIN" ? "Administrador" : user.role === "GERENTE_OBRA" ? "Gerente de Obras" : user.unitName ?? "Unidade";
+    user.role === "ADMIN"
+      ? "Administrador"
+      : user.role === "GERENTE_OBRA"
+        ? "Gerente de Obras"
+        : (user.unitName ?? "Unidade");
 
   return (
-    <header className="border-b bg-background">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-4">
-        <Link href="/dashboard" className="font-semibold whitespace-nowrap">
-          Plataforma TID
-        </Link>
-        <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors hover:bg-accent hover:text-accent-foreground",
-                pathname === link.href ||
-                  (link.href !== "/dashboard" && pathname.startsWith(link.href))
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground"
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="flex items-center gap-3 whitespace-nowrap">
-          <div className="text-right text-sm leading-tight">
-            <div className="font-medium">{user.name}</div>
-            <div className="text-muted-foreground text-xs">{roleLabel}</div>
+    <header className="bg-brand shrink-0">
+      <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <Image
+            src="/logo.png"
+            alt="Vila Brasil Engenharia"
+            width={40}
+            height={40}
+            className="size-9 rounded-md sm:size-10"
+            priority
+          />
+          <div className="hidden leading-tight sm:block">
+            <div className="text-sm font-semibold text-white">Plataforma TID</div>
+            <div className="text-brand-support-1 text-[11px]">Vila Brasil Engenharia</div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => signOut({ callbackUrl: "/login" })}>
+        </Link>
+        <div className="flex-1" />
+        <div className="flex items-center gap-3">
+          <div className="hidden text-right text-sm leading-tight sm:block">
+            <div className="font-medium text-white">{user.name}</div>
+            <div className="text-brand-support-1 text-xs">{roleLabel}</div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-white/25 bg-white/5 text-white hover:bg-white/15 hover:text-white"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+          >
             Sair
           </Button>
         </div>

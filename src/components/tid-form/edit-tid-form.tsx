@@ -151,7 +151,7 @@ export function EditTidForm({
               Replicar 1º item para os demais
             </Button>
           )}
-          <Button type="button" variant="outline" size="sm" onClick={addItem}>
+          <Button type="button" size="sm" onClick={addItem}>
             <Plus className="mr-1 size-4" />
             Adicionar item
           </Button>

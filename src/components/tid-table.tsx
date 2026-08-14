@@ -7,10 +7,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import { formatBRL } from "@/lib/money";
 import { formatYearMonth } from "@/lib/month";
-import { TID_STATUS_LABELS, TID_TYPE_LABELS, type TidStatus, type TidType } from "@/lib/constants";
+import { TID_TYPE_LABELS, type TidType } from "@/lib/constants";
 
 export interface TidRowData {
   id: string;
@@ -23,12 +23,6 @@ export interface TidRowData {
   originUnit: { code: string; name: string };
   destUnit: { code: string; name: string };
   items: { valorTidCents: number }[];
-}
-
-function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
-  if (status === "APROVADA") return "default";
-  if (status === "RECUSADA") return "destructive";
-  return "secondary";
 }
 
 export function TidTable({ tids, emptyMessage }: { tids: TidRowData[]; emptyMessage?: string }) {
@@ -70,9 +64,7 @@ export function TidTable({ tids, emptyMessage }: { tids: TidRowData[]; emptyMess
                 <TableCell>{tid.destUnit.code}</TableCell>
                 <TableCell>{formatYearMonth(tid.referenceMonth)}</TableCell>
                 <TableCell>
-                  <Badge variant={statusVariant(tid.status)}>
-                    {TID_STATUS_LABELS[tid.status as TidStatus] ?? tid.status}
-                  </Badge>
+                  <StatusBadge status={tid.status} />
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{formatBRL(total)}</TableCell>
                 <TableCell className="text-muted-foreground text-xs">

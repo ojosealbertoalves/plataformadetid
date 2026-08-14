@@ -57,6 +57,19 @@ export function NewTidForm({ user, units }: { user: SessionUserLike; units: Unit
     (u) => u.id !== originUnitId
   );
 
+  const typeItems = useMemo(
+    () => Object.fromEntries(TID_TYPES.map((t) => [t, `${t} — ${TID_TYPE_LABELS[t]}`])),
+    []
+  );
+  const originItems = useMemo(
+    () => Object.fromEntries(originOptions.map((u) => [u.id, `${u.code} — ${u.name}`])),
+    [originOptions]
+  );
+  const destItems = useMemo(
+    () => Object.fromEntries(destOptions.map((u) => [u.id, `${u.code} — ${u.name}`])),
+    [destOptions]
+  );
+
   function updateItem(index: number, key: string, value: string) {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, [key]: value } : it)));
   }
@@ -134,7 +147,7 @@ export function NewTidForm({ user, units }: { user: SessionUserLike; units: Unit
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
             <Label>Tipo</Label>
-            <Select value={type} onValueChange={(v) => setType(v as TidType)}>
+            <Select value={type} onValueChange={(v) => setType(v as TidType)} items={typeItems}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -155,7 +168,11 @@ export function NewTidForm({ user, units }: { user: SessionUserLike; units: Unit
                 {user.unitCode} — {user.unitName}
               </div>
             ) : (
-              <Select value={originUnitId} onValueChange={(v) => setOriginUnitId(v ?? "")}>
+              <Select
+                value={originUnitId}
+                onValueChange={(v) => setOriginUnitId(v ?? "")}
+                items={originItems}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecione a obra de origem" />
                 </SelectTrigger>
@@ -172,7 +189,11 @@ export function NewTidForm({ user, units }: { user: SessionUserLike; units: Unit
 
           <div className="space-y-2">
             <Label>Destino</Label>
-            <Select value={destUnitId} onValueChange={(v) => setDestUnitId(v ?? "")}>
+            <Select
+              value={destUnitId}
+              onValueChange={(v) => setDestUnitId(v ?? "")}
+              items={destItems}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecione o destino" />
               </SelectTrigger>
@@ -212,7 +233,7 @@ export function NewTidForm({ user, units }: { user: SessionUserLike; units: Unit
               Replicar 1º item para os demais
             </Button>
           )}
-          <Button type="button" variant="outline" size="sm" onClick={addItem}>
+          <Button type="button" size="sm" onClick={addItem}>
             <Plus className="mr-1 size-4" />
             Adicionar item
           </Button>

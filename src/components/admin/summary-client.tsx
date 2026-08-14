@@ -132,11 +132,11 @@ export function AdminSummaryClient() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="max-h-[70vh] overflow-auto rounded-md border">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="sticky left-0 bg-background">Unidade</TableHead>
+          <TableHeader className="bg-card sticky top-0 z-10">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="bg-card sticky left-0 z-20">Unidade</TableHead>
               {TID_TYPES.map((t) => (
                 <TableHead key={t} className="text-right whitespace-nowrap">
                   {t} — {TID_TYPE_SHORT_LABELS[t]}
@@ -153,9 +153,14 @@ export function AdminSummaryClient() {
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((row) => (
-                <TableRow key={row.unitId}>
-                  <TableCell className="sticky left-0 bg-background font-medium whitespace-nowrap">
+              rows.map((row, i) => (
+                <TableRow key={row.unitId} className={cn(i % 2 === 1 && "bg-muted/20")}>
+                  <TableCell
+                    className={cn(
+                      "sticky left-0 z-10 font-medium whitespace-nowrap",
+                      i % 2 === 1 ? "bg-[#1c2530]" : "bg-card"
+                    )}
+                  >
                     {row.unitCode} — {row.unitName}
                   </TableCell>
                   {TID_TYPES.map((t) => {
@@ -164,8 +169,10 @@ export function AdminSummaryClient() {
                       <TableCell
                         key={t}
                         className={cn(
-                          "cursor-pointer text-right tabular-nums hover:underline",
-                          value < 0 && "text-red-600 dark:text-red-400",
+                          "text-right tabular-nums",
+                          value !== 0 &&
+                            "hover:bg-brand/15 cursor-pointer rounded-sm underline decoration-dotted underline-offset-4 transition-colors",
+                          value < 0 && "text-red-400",
                           value === 0 && "text-muted-foreground"
                         )}
                         onClick={() => value !== 0 && openDrilldown(row.unitId, row.unitCode, t)}
@@ -177,7 +184,7 @@ export function AdminSummaryClient() {
                   <TableCell
                     className={cn(
                       "text-right font-semibold tabular-nums",
-                      row.total < 0 && "text-red-600 dark:text-red-400"
+                      row.total < 0 && "text-red-400"
                     )}
                   >
                     {money(row.total)}
@@ -213,9 +220,18 @@ export function AdminSummaryClient() {
                 </TableHeader>
                 <TableBody>
                   {drillEntries.map((entry) => (
-                    <TableRow key={entry.tidId}>
+                    <TableRow
+                      key={entry.tidId}
+                      className="cursor-pointer hover:bg-accent/50"
+                      onClick={() => window.open(`/tids/${entry.tidId}`, "_blank")}
+                    >
                       <TableCell>
-                        <Link href={`/tids/${entry.tidId}`} className="hover:underline" target="_blank">
+                        <Link
+                          href={`/tids/${entry.tidId}`}
+                          className="hover:underline"
+                          target="_blank"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {entry.documentLabel}
                         </Link>
                       </TableCell>

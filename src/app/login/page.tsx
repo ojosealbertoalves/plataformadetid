@@ -3,10 +3,11 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 function LoginForm() {
@@ -39,13 +40,18 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-xl">Plataforma TID</CardTitle>
-          <CardDescription>Vila Brasil Engenharia — Transferência Interna de Despesa</CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="bg-background flex min-h-screen items-center justify-center px-4 py-10">
+      <Card className="w-full max-w-sm gap-0 overflow-hidden py-0">
+        <div className="bg-brand flex flex-col items-center gap-3 px-8 py-10">
+          <Image src="/logo.png" alt="Vila Brasil Engenharia" width={96} height={96} className="size-24 rounded-2xl shadow-lg" priority />
+          <div className="text-center">
+            <div className="text-lg font-semibold text-white">Plataforma TID</div>
+            <div className="text-brand-support-1 text-xs">
+              Vila Brasil Engenharia — Transferência Interna de Despesa
+            </div>
+          </div>
+        </div>
+        <CardContent className="px-8 py-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="login">Login</Label>
